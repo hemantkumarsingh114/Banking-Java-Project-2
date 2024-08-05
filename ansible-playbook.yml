@@ -1,15 +1,31 @@
-- name : Configure Docker on EC2 Instances
-  hosts : all
-  become: true
+---
+- name: Install Docker and run Docker application
+  hosts: all
+  become: yes
   connection : ssh
-  tasks : 
-  - name: updating apt
-    command : sudo apt-get update
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
 
-  - name : Install Docker
-    command : sudo apt-get install -y docker.io
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started
 
-  - name : Start Docker Service
-    command : sudo systemctl start docker
+    - name : stop existing containers
+      shell: docker stop $(docker ps -a -q)
+    
+    - name : delete all containers
+      shell: docker rm $(docker ps -a -q)
 
-
+    - name: Run Docker Application Container
+      docker_container:
+        name: WebApp01
+        image: hemantkumarsingh114/healthcareproject:1.0
+        state: started
+        restart_policy: always
+        published_ports:
+          - "8084:8082"
